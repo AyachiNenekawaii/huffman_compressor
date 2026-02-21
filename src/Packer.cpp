@@ -10,7 +10,7 @@ namespace huffman {
 std::vector<uint8_t> Packer::readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
     if (!file) {
-        throw std::runtime_error("open file failed: " + filename);
+        throw std::runtime_error("打开文件失败: " + filename);
     }
 
     std::streamsize size = file.tellg();
@@ -18,7 +18,7 @@ std::vector<uint8_t> Packer::readFile(const std::string& filename) {
 
     std::vector<uint8_t> buffer(size);
     if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
-        throw std::runtime_error("read file failed: " + filename);
+        throw std::runtime_error("读取文件失败: " + filename);
     }
 
     return buffer;
@@ -27,20 +27,12 @@ std::vector<uint8_t> Packer::readFile(const std::string& filename) {
 void Packer::writeFile(const std::string& fileName, const std::vector<uint8_t>& data) {
     std::ofstream file(fileName, std::ios::binary);
     if (!file) {
-        throw std::runtime_error("create file failed: " + fileName);
+        throw std::runtime_error("创建文件失败: " + fileName);
     }
 
     if (!file.write(reinterpret_cast<const char*>(data.data()), data.size())) {
-        throw std::runtime_error("write file failed: " + fileName);
+        throw std::runtime_error("写入文件失败: " + fileName);
     }
-}
-
-void Packer::createDirectory(const std::string& path) {
-    fs::create_directories(path);
-}
-
-std::string Packer::getFilename(const std::string& path) {
-    return fs::path(path).filename().string();
 }
  
 std::string Packer::combinePath(const std::string& dir, const std::string& file) {
@@ -52,7 +44,7 @@ void Packer::traverseDirectory(const std::string& path, const std::string& relat
     try {
         for (const auto& entry : fs::directory_iterator(path)) {
             std::string entryRelativePath = combinePath(relativePath,
-                getFilename(entry.path().string()));
+                                                        entry.path().filename().string());
             
             if (fs::is_directory(entry)) {
                 entries.emplace_back(EntryType::DIR, entryRelativePath);
@@ -65,7 +57,7 @@ void Packer::traverseDirectory(const std::string& path, const std::string& relat
             }
         }
     } catch (const fs::filesystem_error& e) {
-        std::cerr << "traverseDirectory error: " << e.what() << std::endl;
+        std::cerr << "遍历目录失败: " << e.what() << std::endl;
     }
 }
 
@@ -133,8 +125,8 @@ DirectoryEntry Packer::deserializeEntry(BitInputStream& bitStream) {
 std::vector<uint8_t> Packer::pack(const std::vector<std::string>& sources) {
     // 检查源路径是否存在
     for (const auto& source : sources) {
-        if (!fileExists(source)) {
-            throw std::runtime_error("file not exists: " + source);
+        if (!fs::exists(source)) {
+            throw std::runtime_error("文件不存在: " + source);
         }
     }
 
@@ -142,13 +134,13 @@ std::vector<uint8_t> Packer::pack(const std::vector<std::string>& sources) {
 
     // 遍历所有源路径，收集目录项
     for (const auto& source : sources) {
-        if (isDirectory(source)) {
-            // 递归遍历目录
+        if (fs::is_directory(source)) { // 递归遍历目录
             traverseDirectory(source, "", entries);
-        } else if(fs::is_regular_file(source)) {
-            // 直接添加文件条目
-            entries.emplace_back(EntryType::FILE, getFilename(source),
-                getFileSize(source), readFile(source));
+        } else if(fs::is_regular_file(source)) { // 直接添加文件条目
+            entries.emplace_back(EntryType::FILE, 
+                                 fs::path(source).filename().string(),
+                                 fs::file_size(source),
+                                 readFile(source));
         }
     }
 
@@ -166,8 +158,8 @@ std::vector<uint8_t> Packer::pack(const std::vector<std::string>& sources) {
 
 void Packer::unpack(const std::vector<uint8_t>& packedData, const std::string& outputDir) {
     // 检查输出目录是否存在，不存在则创建
-    if (!isDirectory(outputDir)) {
-        createDirectory(outputDir);
+    if (!fs::exists(outputDir)) {
+        fs::create_directories(outputDir);
     }
 
     // 反序列化目录项
@@ -183,27 +175,12 @@ void Packer::unpack(const std::vector<uint8_t>& packedData, const std::string& o
 
         if (entry.type == EntryType::DIR) {
             // 创建目录（如果是目录）
-            createDirectory(fullPath);
+            fs::create_directories(fullPath);
         } else if (entry.type == EntryType::FILE) {
             // 写入文件
             writeFile(fullPath, entry.data);
         }
     }
-}
-
-bool Packer::isDirectory(const std::string& path) {
-    return fs::is_directory(path);
-}
-
-bool Packer::fileExists(const std::string& path) {
-    return fs::exists(path);
-}
-
-uint64_t Packer::getFileSize(const std::string& path) {
-    if (fs::exists(path) && fs::is_regular_file(path)) {
-        return fs::file_size(path);
-    }
-    return 0;
 }
 
 }

@@ -36,23 +36,20 @@ struct DirectoryEntry {
     {}
 };
 
-// // 进度回调函数类型
-// typedef std::function<void(const std::string& currentFile,
-//     size_t current, size_t total)> ProgressCallback;
+// 进度回调函数类型
+typedef std::function<void(const std::string& currentFile,
+        size_t current, size_t total)> 
+        ProgressCallback;
 
 class Packer {
 private:
+    ProgressCallback progressCallback;
+
     // 读取文件内容
     std::vector<uint8_t> readFile(const std::string& filename);
 
     // 写入文件
     void writeFile(const std::string& filename, const std::vector<uint8_t>& data);
-
-    // 创建目录
-    void createDirectory(const std::string& path);
-
-    // 获取文件名
-    std::string getFilename(const std::string& path);
 
     // 组合路径
     std::string combinePath(const std::string& dir, const std::string& file);
@@ -76,41 +73,6 @@ public:
 
     // 解包文件或目录
     void unpack(const std::vector<uint8_t>& packedData, const std::string& outputDir);
-
-    // 检查路径是否为目录
-    static bool isDirectory(const std::string& path);
-
-    // 检查文件是否存在
-    static bool fileExists(const std::string& path);
-
-    // 获取文件大小
-    static uint64_t getFileSize(const std::string& path);
-};
-
-// 目录压缩器类
-class DirectoryCompressor {
-public:
-    DirectoryCompressor() = default;
-    ~DirectoryCompressor() = default;
-
-    // 设置进度回调
-    // void setProgressCallback(ProgressCallback callback);
-
-    // 压缩目录
-    void compress(const std::string& sourceDir,
-                  const std::string& outputFile);
-
-    // 解压目录
-    void decompress(const std::string& compressedFile,
-                    const std::string& outputDir);
-
-    // 获取最后一次压缩/解压统计信息
-    // DirectoryCompressionStats getStats() const;
-
-    // 清空状态
-    void clear();
-
-   
 };
 
 }

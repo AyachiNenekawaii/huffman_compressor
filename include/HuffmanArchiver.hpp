@@ -9,21 +9,15 @@
 namespace huffman {
 
 // 进度回调函数类型定义
-// typedef std::function<void(const std::string& currentFile,
-//                            size_t current, 
-//                            size_t total)> ProgressCallback;
+typedef std::function<void(const std::string& currentFile,
+                           size_t current, 
+                           size_t total)> ProgressCallback;
 
 // 哈夫曼压缩主类
 class HuffmanArchiver {
 private:
     std::unique_ptr<Packer> packer;
     std::unique_ptr<FileCompressor> fileCompressor;
-
-    // 检查是否为目录
-    bool isDirectory(const std::string& path);
-    
-    // 检查文件是否存在
-    bool fileExists(const std::string& path);
     
     // 获取文件扩展名
     std::string getExtension(const std::string& path);
@@ -46,15 +40,6 @@ public:
     // output: 输出路径（如果为空，自动生成）
     // 返回值: 是否成功
     bool decompress(const std::string& source, const std::string& output = "");
-
-    // 获取文件压缩统计信息
-    // CompressionStats getFileStats() const;
-
-    // 获取目录压缩统计信息
-    // DirectoryCompressionStats getDirectoryStats() const;
-
-    // 设置进度回调
-    // void setProgressCallback(ProgressCallback callback);
 
     // 获取版本信息
     static std::string getVersion();

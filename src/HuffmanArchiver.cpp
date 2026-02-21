@@ -11,18 +11,10 @@ constexpr const char* FILE_EXTENSION = ".huff";
 
 HuffmanArchiver::HuffmanArchiver()
     : fileCompressor(std::make_unique<FileCompressor>())
-    // , dirCompressor(std::make_unique<DirectoryCompressor>())
 {}
 
 HuffmanArchiver::~HuffmanArchiver() = default;
 
-bool HuffmanArchiver::isDirectory(const std::string& path) {
-    return fs::is_directory(path);
-}
-
-bool HuffmanArchiver::fileExists(const std::string& path) {
-    return fs::exists(path);
-}
 
 std::string HuffmanArchiver::getExtension(const std::string& path) {
     return fs::path(path).extension().string();
@@ -35,8 +27,8 @@ std::string HuffmanArchiver::removeExtension(const std::string& path) {
 bool HuffmanArchiver::compress(const std::vector<std::string>& sources, const std::string& output) {
     try {
         for (const auto& source : sources) {
-            if (!fileExists(source)) {
-                std::cerr << "error: path not exists: " + source << std::endl;
+            if (!fs::exists(source)) {
+                std::cerr << "错误: 文件不存在: " << source << std::endl;
                 return false;
             }
         }
@@ -48,28 +40,28 @@ bool HuffmanArchiver::compress(const std::vector<std::string>& sources, const st
         }
 
         // 检查输出文件是否已经存在
-        if (fileExists(actualOutput)) {
-            std::cout << "warning: output file already exists:" << actualOutput
-                << "\nsure to override? (y/n): ";
+        if (fs::exists(actualOutput)) {
+            std::cout << "警告: 输出文件已存在: " << actualOutput
+                << "\n是否确认覆盖? (y/n): ";
             char confirm;
             std::cin >> confirm;
             if (confirm != 'y' && confirm != 'Y') {
-                std::cout << "operation cancelled" << std::endl;
+                std::cout << "操作已取消" << std::endl;
                 return false;
             }
         }
 
-        std::cout << "compressing..." << std::endl;
+        std::cout << "压缩中..." << std::endl;
 
         // 打包并压缩数据
         std::vector<uint8_t> packedData = packer->pack(sources);
         fileCompressor->compressToFile(packedData, actualOutput);
 
-        std::cout << "compression completed: " << actualOutput << std::endl;
+        std::cout << "压缩完成: " << actualOutput << std::endl;
 
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "compression failed: " << e.what() << std::endl;
+        std::cerr << "压缩失败: " << e.what() << std::endl;
         return false;
     }
 }
@@ -77,8 +69,8 @@ bool HuffmanArchiver::compress(const std::vector<std::string>& sources, const st
 bool HuffmanArchiver::decompress(const std::string& source,
                                  const std::string& output) {
     try {
-        if (!fileExists(source)) {
-            std::cerr << "error: compressed file not exists: " << source << std::endl;
+        if (!fs::exists(source)) {
+            std::cerr << "错误: 压缩文件不存在: " << source << std::endl;
             return false;
         }
 
@@ -94,18 +86,18 @@ bool HuffmanArchiver::decompress(const std::string& source,
         }
 
         // 检查输出路径是否已存在
-        if (fileExists(actualOutput)) {
-            std::cout << "warning: output path already exists:" << actualOutput
-                << "\nsure to override? (y/n): ";
+        if (fs::exists(actualOutput)) {
+            std::cout << "警告: 输出路径已存在: " << actualOutput
+                << "\n是否确认覆盖? (y/n): ";
             char confirm;
             std::cin >> confirm;
             if (confirm != 'y' && confirm != 'Y') {
-                std::cout << "operation cancelled" << std::endl;
+                std::cout << "操作已取消" << std::endl;
                 return false;
             }
         }
 
-        std::cout << "decompressing..." << std::endl;
+        std::cout << "解压中..." << std::endl;
 
         // 从文件解压数据
         std::vector<uint8_t> packedData;
@@ -114,27 +106,15 @@ bool HuffmanArchiver::decompress(const std::string& source,
         // 解包数据
         packer->unpack(packedData, actualOutput);
 
-        std::cout << "decompression completed: " << actualOutput << std::endl;
+        std::cout << "解压完成: " << actualOutput << std::endl;
         
         return true;
 
     } catch (const std::exception& e) {
-        std::cerr << "decompression failed: " << e.what() << std::endl;
+        std::cerr << "解压失败: " << e.what() << std::endl;
         return false;
     }
 }
-
-// CompressionStats HuffmanArchiver::getFileStats() const {
-//     return fileCompressor->getStats();
-// }
-
-// DirectoryCompressionStats HuffmanArchiver::getDirectoryStats() const {
-//     return dirCompressor->getStats();
-// }
-
-// void HuffmanArchiver::setProgressCallback(ProgressCallback callback) {
-//     dirCompressor->setProgressCallback(callback);
-// }
 
 std::string HuffmanArchiver::getVersion() {
     return VERSION;
@@ -142,13 +122,12 @@ std::string HuffmanArchiver::getVersion() {
 
 void HuffmanArchiver::printInfo() {
     std::cout << "======================================" << std::endl;
-    std::cout << "  哈夫曼压缩工具 v" << getVersion() << std::endl;
+    std::cout << "  哈夫曼编码解压缩工具 v" << getVersion() << std::endl;
     std::cout << "======================================" << std::endl;
     std::cout << "基于哈夫曼编码的文件/目录压缩工具" << std::endl;
     std::cout << "支持功能:" << std::endl;
-    std::cout << "  - 单文件压缩/解压" << std::endl;
+    std::cout << "  - 文件压缩/解压" << std::endl;
     std::cout << "  - 目录压缩/解压（包含子目录）" << std::endl;
-    std::cout << "  - 压缩统计信息" << std::endl;
     std::cout << "======================================" << std::endl;
 }
 

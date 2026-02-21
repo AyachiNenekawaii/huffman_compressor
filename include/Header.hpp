@@ -14,6 +14,8 @@ constexpr uint32_t MAGIC_NUMBER = 0x48554646; // "HUFF"
 // [N字节: 哈夫曼树数据]
 // [M字节: 压缩后的文件内容]
 
+#pragma pack(push, 1)
+
 struct Header {
     uint32_t magicNumber;
     uint16_t flags;
@@ -31,5 +33,7 @@ struct Header {
 };
 
 constexpr uint8_t HEADER_SIZE = sizeof(Header);
+
+#pragma pack(pop)
 
 #endif // HEADER_HPP

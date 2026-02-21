@@ -6,15 +6,14 @@
 using namespace huffman;
 
 void printUsage(std::string programName) {
-    std::string usage = "Usage:\n  " + programName + " <command> [options]\n"
-        + "\nCommands:\n"
-        + "  h, help      show help information\n"
-        + "  v, version   show version information\n"
-        + "  c, compress  compress files or directories\n"
-        + "  x, extra     extract files or directories\n"
-        + "\nOptions:\n"
-        + "  -o <path>    specify output path\n";
-        // + "  -p           show progress information\n";
+    std::string usage = "使用方法:\n  " + programName + " <命令> [选项]\n"
+        + "\n命令:\n"
+        + "  h, help      显示帮助信息\n"
+        + "  v, version   显示版本信息\n"
+        + "  c, compress  压缩文件或目录\n"
+        + "  x, extra     解压文件或目录\n"
+        + "\n选项:\n"
+        + "  -o <path>    指定输出路径\n";
     std::cout << usage << std::endl;
 }
 
@@ -50,26 +49,19 @@ int main(int argc, char* argv[]) {
         } else if (arg[0] != '-') {
             sources.push_back(arg);
         } else {
-            std::cerr << "unknow option:" << arg << std::endl;
+            std::cerr << "未知选项:" << arg << std::endl;
             printUsage(argv[0]);
             return 1;
         }
     }
 
     if (sources.empty()) {
-        std::cerr << "error: no source path specified" << std::endl;
+        std::cerr << "错误: 未指定源文件" << std::endl;
         printUsage(argv[0]);
         return 1;
     }
 
     HuffmanArchiver archiver;
-    
-    // 设置进度回调
-    // if (showProgress) {
-    //     archiver.setProgressCallback([](const std::string& currentFile, size_t current, size_t total) {
-    //         std::cout << "[" << current << "/" << total << "] " << currentFile << std::endl;
-    //     });
-    // }
 
     bool isSuccess = true;
     
@@ -77,13 +69,13 @@ int main(int argc, char* argv[]) {
         isSuccess = archiver.compress(sources, outputPath);
     } else if (command == "x" || command == "extra") {
         if (sources.size() != 1) {
-            std::cerr << "error: extra command requires exactly one source path" << std::endl;
+            std::cerr << "错误: extra 命令要求指定一个源文件" << std::endl;
             printUsage(argv[0]);
             return 1;
         }
         isSuccess = archiver.decompress(sources[0], outputPath);
     } else {
-        std::cerr << "unknow command:" << command << std::endl;
+        std::cerr << "未知命令:" << command << std::endl;
         printUsage(argv[0]);
         return 1; 
     }
