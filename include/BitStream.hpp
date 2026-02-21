@@ -37,8 +37,8 @@ public:
 class BitInputStream {
 private:
     std::vector<uint8_t> buffer; // 字节缓冲区
-    int byteIndex;               // 当前字节序列的索引
-    int bitIndex;                // 当前位在字节中的索引
+    uint32_t byteIndex;          // 当前字节序列的索引
+    uint8_t bitIndex;            // 当前位在字节中的索引
 
 public:
     BitInputStream();
