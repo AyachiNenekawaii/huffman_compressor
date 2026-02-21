@@ -37,15 +37,11 @@ int main(int argc, char* argv[]) {
 
     std::vector<std::string> sources;
     std::string outputPath;
-    bool showProgress = false;
-
     for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
         
         if (arg == "-o" && i + 1 < argc) {
             outputPath = argv[++i];
-        } else if (arg == "-p") {
-            showProgress = true;
         } else if (arg[0] != '-') {
             sources.push_back(arg);
         } else {
