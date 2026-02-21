@@ -30,22 +30,22 @@ public:
 
     std::vector<uint8_t> getBuffer() const;
     int getBitCount() const;
-    void writeToFile(const std::string& fileName);
+    void writeToFile(const std::string& filename);
 };
 
 
 class BitInputStream {
 private:
     std::vector<uint8_t> buffer; // 字节缓冲区
-    int byteIndex;                 // 当前字节序列的索引
-    int bitIndex;                  // 当前位在字节中的索引
+    int byteIndex;               // 当前字节序列的索引
+    int bitIndex;                // 当前位在字节中的索引
 
 public:
     BitInputStream();
     BitInputStream(const std::vector<uint8_t>& data);
     ~BitInputStream();
 
-    void loadFromFile(const std::string& fileName);
+    void loadFromFile(const std::string& filename);
     void setBuffer(const std::vector<uint8_t>& data);
 
     bool readBit();

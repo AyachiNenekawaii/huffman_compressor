@@ -64,10 +64,10 @@ int BitOutputStream::getBitCount() const {
     return buffer.size() * 8 + bitCount;
 }
 
-void BitOutputStream::writeToFile(const std::string& fileName) {
-    std::ofstream file(fileName, std::ios::binary);
+void BitOutputStream::writeToFile(const std::string& filename) {
+    std::ofstream file(filename, std::ios::binary);
     if (!file) {
-        throw std::runtime_error("无法打开文件：" + fileName);
+        throw std::runtime_error("无法打开文件：" + filename);
     }
     file.write(reinterpret_cast<const char*>(buffer.data()), buffer.size());
     file.close();
@@ -82,10 +82,10 @@ BitInputStream::BitInputStream(const std::vector<uint8_t>& data)
 
 BitInputStream::~BitInputStream() = default;
 
-void BitInputStream::loadFromFile(const std::string& fileName) {
-    std::ifstream file(fileName, std::ios::binary | std::ios::ate);
+void BitInputStream::loadFromFile(const std::string& filename) {
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
     if (!file) {
-        throw std::runtime_error("无法打开文件：" + fileName);
+        throw std::runtime_error("无法打开文件：" + filename);
     }
     
     std::streamsize size = file.tellg();
@@ -93,7 +93,7 @@ void BitInputStream::loadFromFile(const std::string& fileName) {
     
     buffer.resize(size);
     if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
-        throw std::runtime_error("读取文件失败：" + fileName);
+        throw std::runtime_error("读取文件失败：" + filename);
     }
     
     byteIndex = 0;

@@ -1,38 +1,12 @@
 #include "FileCompressor.hpp"
-#include <iostream>
-#include <iomanip>
 #include <stdexcept>
 
 namespace huffman {
 
-// 压缩文件格式：
-// [8字节: 原始文件大小]
-// [8字节: 哈夫曼树大小]
-// [N字节: 哈夫曼树数据]
-// [M字节: 压缩后的文件内容]
-
-void CompressionStats::print() const {
-    std::cout << "========== 压缩统计 ==========" << std::endl;
-    std::cout << "源文件：" << sourcePath << std::endl;
-    std::cout << "输出文件：" << outputPath << std::endl;
-    std::cout << "原始大小：" << originalSize << " 字节" << std::endl;
-    std::cout << "压缩后大小：" << compressedSize << " 字节" << std::endl;
-    std::cout << "哈夫曼树大小：" << huffmanTreeSize << " 字节" << std::endl;
-    std::cout << std::fixed << std::setprecision(2);
-    std::cout << "压缩率：" << compressionRatio << std::endl;
-    std::cout << "压缩率百分比：" << compressionPercentage << "%" << std::endl;
-    std::cout << "耗时：" << duration.count() << " 毫秒" << std::endl;
-    std::cout << "==============================" << std::endl;
-}
-
-FileCompressor::FileCompressor() = default;
-
-FileCompressor::~FileCompressor() = default;
-
-std::vector<uint8_t> FileCompressor::readFile(const std::string& fileName) {
-    std::ifstream file(fileName, std::ios::binary | std::ios::ate);
+std::vector<uint8_t> FileCompressor::readFile(const std::string& filename) {
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
     if (!file) {
-        throw std::runtime_error("打开文件失败：" + fileName);
+        throw std::runtime_error("open file failed: " + filename);
     }
 
     std::streamsize size = file.tellg();
@@ -40,34 +14,46 @@ std::vector<uint8_t> FileCompressor::readFile(const std::string& fileName) {
 
     std::vector<uint8_t> buffer(size);
     if (!file.read(reinterpret_cast<char*>(buffer.data()), size)) {
-        throw std::runtime_error("读取文件失败：" + fileName);
+        throw std::runtime_error("read file failed: " + filename);
     }
 
     return buffer;
 }
 
-void FileCompressor::writeFile(const std::string& fileName, const std::vector<uint8_t>& data) {
-    std::ofstream file(fileName, std::ios::binary);
+void FileCompressor::writeFile(const std::string& filename, const std::vector<uint8_t>& data) {
+    std::ofstream file(filename, std::ios::binary);
     if (!file) {
-        throw std::runtime_error("创建文件失败：" + fileName);
+        throw std::runtime_error("create file failed: " + filename);
     }
 
     if (!file.write(reinterpret_cast<const char*>(data.data()), data.size())) {
-        throw std::runtime_error("写入文件失败：" + fileName);
+        throw std::runtime_error("write file failed: " + filename);
     }
 }
 
-CompressionStats FileCompressor::compress(const std::string& sourcePath,
-    std::vector<uint8_t>& compressedData) {
-    auto start = std::chrono::high_resolution_clock::now();
+void FileCompressor::setHeader(uint16_t treeSize, uint64_t originalSize, uint64_t compressedSize) {
+    header.treeSize = treeSize;
+    header.originalSize = originalSize;
+    header.compressedSize = compressedSize;
+}
 
-    // 读取源文件
-    std::vector<uint8_t> originalData = readFile(sourcePath);
-
-    if (originalData.empty()) {
-        throw std::runtime_error("源文件为空：" + sourcePath);
+void FileCompressor::setHeader(const std::vector<uint8_t>& compressedData) {
+    if (compressedData.size() < HEADER_SIZE) {
+        throw std::runtime_error("invalid compressed data");
     }
 
+    // 从压缩数据中读取头信息
+    std::copy(compressedData.begin(), compressedData.begin() + HEADER_SIZE,
+        reinterpret_cast<uint8_t*>(&header));
+    
+    // 检查数据是否有效
+    if (header.magicNumber != MAGIC_NUMBER 
+        || header.treeSize + header.compressedSize + HEADER_SIZE > compressedData.size()) {
+        throw std::runtime_error("invalid compressed data");
+    }
+}
+
+std::vector<uint8_t> FileCompressor::compress(const std::vector<uint8_t>& originalData) {
     // 构建哈夫曼树
     huffmanTree.buildFromData(originalData);
 
@@ -82,22 +68,19 @@ CompressionStats FileCompressor::compress(const std::string& sourcePath,
     }
     bitStream.flush();
 
+    // 获取压缩后的内容
     std::vector<uint8_t> compressedContent = bitStream.getBuffer();
 
-    // 构建压缩文件格式
-    compressedData.clear();
+    // 设置头信息
+    setHeader(treeData.size(), originalData.size(), compressedContent.size());
 
-    // 写入原始文件大小（8字节，大端序）
-    uint64_t originalSize = originalData.size();
-    for (int i = 7; i >= 0; i--) {
-        compressedData.push_back(static_cast<uint8_t>((originalSize >> (i * 8)) & 0xFF));
-    }
+    // 构建压缩文件
+    std::vector<uint8_t> compressedData;
 
-    // 写入哈夫曼树大小（8字节，大端序）
-    uint64_t treeSize = treeData.size();
-    for (int i = 7; i >= 0; i--) {
-        compressedData.push_back(static_cast<uint8_t>((treeSize >> (i * 8)) & 0xFF));
-    }
+    // 写入头信息
+    compressedData.insert(compressedData.end(), 
+        reinterpret_cast<const uint8_t*>(&header), 
+        reinterpret_cast<const uint8_t*>(&header) + sizeof(Header));
 
     // 写入哈夫曼树数据
     compressedData.insert(compressedData.end(), treeData.begin(), treeData.end());
@@ -106,78 +89,34 @@ CompressionStats FileCompressor::compress(const std::string& sourcePath,
     compressedData.insert(compressedData.end(),
         compressedContent.begin(), compressedContent.end());
 
-    // 计算统计信息
-    auto end = std::chrono::high_resolution_clock::now();
-
-    stats = CompressionStats();
-    stats.sourcePath = sourcePath;
-    stats.originalSize = originalSize;
-    stats.compressedSize = compressedData.size();
-    stats.huffmanTreeSize = treeSize;
-    stats.duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    stats.calculateRatio();
-
-    return stats;
+    return compressedData;
 }
 
-CompressionStats FileCompressor::compressToFile(const std::string& sourcePath,
-    const std::string& outputPath) {
-    std::vector<uint8_t> compressedData;
-    CompressionStats result = compress(sourcePath, compressedData);
-
-    writeFile(outputPath, compressedData);
-    result.outputPath = outputPath;
-    stats.outputPath = outputPath;
-
-    return result;
-}
-
-CompressionStats FileCompressor::decompress(const std::vector<uint8_t>& compressedData,
-                                            const std::string& outputPath, 
-                                            std::vector<uint8_t>& decompressedData) {
-    auto start = std::chrono::high_resolution_clock::now();
-
-    if (compressedData.size() < 16) {
-        throw std::runtime_error("压缩数据格式无效：数据太短");
-    }
-
-    // 读取原始文件大小
-    uint64_t originalSize = 0;
-    for (int i = 0; i < 8; i++) {
-        originalSize = (originalSize << 8) | compressedData[i];
-    }
-
-    // 读取哈夫曼树大小
-    uint64_t treeSize = 0;
-    for (int i = 8; i < 16; i++) {
-        treeSize = (treeSize << 8) | compressedData[i];
-    }
-
-    // 检查数据完整性
-    if (compressedData.size() < 16 + treeSize) {
-        throw std::runtime_error("压缩数据格式无效：哈夫曼树数据不完整");
-    }
+std::vector<uint8_t> FileCompressor::decompress(const std::vector<uint8_t>& compressedData) {
+    // 获取头信息
+    setHeader(compressedData);
 
     // 读取哈夫曼树
-    std::vector<uint8_t> treeData(compressedData.begin() + 16,
-                                  compressedData.begin() + 16 + treeSize);
+    std::vector<uint8_t> treeData(compressedData.begin() + sizeof(Header),
+        compressedData.begin() + sizeof(Header) + header.treeSize);
     huffmanTree.deserialize(treeData);
     
     // 读取压缩数据
-    std::vector<uint8_t> compressedContent(compressedData.begin() + 16 + treeSize,
+    std::vector<uint8_t> compressedContent(compressedData.begin() + sizeof(Header) + header.treeSize,
         compressedData.end());
     
     // 解压数据
     BitInputStream bitStream(compressedContent);
-    decompressedData.clear();
-    decompressedData.reserve(originalSize);
+
+    std::vector<uint8_t> decompressedData;
+    decompressedData.reserve(header.originalSize);
 
     std::shared_ptr<HuffmanNode> currentNode = huffmanTree.getRoot();
 
     if (currentNode->isLeaf) { // 特殊情况：只有一个字符
-        decompressedData.resize(originalSize, currentNode->data);
+        decompressedData.resize(header.originalSize, currentNode->data);
     } else {
-        while (decompressedData.size() < originalSize && bitStream.hasMoreBits()) {
+        while (decompressedData.size() < header.originalSize && bitStream.hasMoreBits()) {
             bool bit = bitStream.readBit();
             if (bit) {
                 currentNode = currentNode->right;
@@ -191,45 +130,27 @@ CompressionStats FileCompressor::decompress(const std::vector<uint8_t>& compress
         }
     }
 
-    // 如果指定了输出路径，写入文件
-    if (!outputPath.empty()) {
-        writeFile(outputPath, decompressedData);
-    }
-
-    // 计算统计信息
-    auto end = std::chrono::high_resolution_clock::now();
-
-    stats = CompressionStats();
-    stats.sourcePath = "(压缩数据)";
-    stats.outputPath = outputPath.empty() ? "(内存)" : outputPath;
-    stats.originalSize = originalSize;
-    stats.compressedSize = compressedData.size();
-    stats.huffmanTreeSize = treeSize;
-    stats.duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    stats.calculateRatio();
-
-    return stats;
+    return decompressedData;
 }
 
-CompressionStats FileCompressor::decompressFromFile(const std::string& compressedPath,
-                                                    const std::string& outputPath) {
-    std::vector<uint8_t> compressedData = readFile(compressedPath);
-    std::vector<uint8_t> decompressedData;
+void FileCompressor::compressToFile(const std::vector<uint8_t>& originalData, const std::string& output) {
+    // 压缩数据
+    std::vector<uint8_t> compressedData = compress(originalData);
 
-    CompressionStats result = decompress(compressedData, outputPath, decompressedData);
-    result.sourcePath = compressedPath;
-    stats.sourcePath = compressedPath;
-
-    return result;
+    // 写入压缩文件
+    writeFile(output, compressedData);
 }
 
-CompressionStats FileCompressor::getStats() const {
-    return stats;
+void FileCompressor::decompressFromFile(const std::string& input, std::vector<uint8_t>& decompressedData) {
+    // 读取压缩文件
+    std::vector<uint8_t> compressedData = readFile(input);
+
+    // 解压数据
+    decompressedData = decompress(compressedData);
 }
 
 void FileCompressor::clear() {
     huffmanTree.clear();
-    stats = CompressionStats();
 }
 
 }

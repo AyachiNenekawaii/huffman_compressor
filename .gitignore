@@ -1,0 +1,60 @@
+# Build artifacts
+build/
+cmake-build-*/
+out/
+
+# Executables
+*.exe
+*.out
+huffman_compressor
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Icon?
+.deps/
+.libs/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Debug and profiling
+*.dSYM/
+*.pdb
+*.profdata
+
+# Archives
+*.tar*
+*.zip
+*.gz
+*.7z
+
+# Dependencies
+vendor/
+third_party/
+
+# User-specific files
+config/
+secrets/
+.env
+*.key

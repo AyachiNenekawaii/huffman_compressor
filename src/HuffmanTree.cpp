@@ -123,7 +123,7 @@ std::shared_ptr<HuffmanNode> HuffmanTree::getRoot() const {
 // 标志位: 0x01 = 叶子节点, 0x00 = 内部节点
 
 void HuffmanTree::serializeTree(std::shared_ptr<HuffmanNode> node,
-    std::vector<uint8_t>& output) const {
+                                std::vector<uint8_t>& output) const {
     if (!node) return;
 
     if (node->isLeaf) {
