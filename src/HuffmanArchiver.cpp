@@ -13,8 +13,6 @@ HuffmanArchiver::HuffmanArchiver()
     : fileCompressor(std::make_unique<FileCompressor>())
 {}
 
-HuffmanArchiver::~HuffmanArchiver() = default;
-
 
 std::string HuffmanArchiver::getExtension(const std::string& path) {
     return fs::path(path).extension().string();

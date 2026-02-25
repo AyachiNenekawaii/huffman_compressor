@@ -74,8 +74,8 @@ void HuffmanTree::buildFromData(const std::vector<uint8_t>& data) {
     buildFromFrequencies(frequencies);
 }
 
-void HuffmanTree::generateCodes(std::shared_ptr<HuffmanNode> node,
-    std::vector<bool>& currentCode) {
+void HuffmanTree::generateCodes(const std::shared_ptr<HuffmanNode>& node,
+                                std::vector<bool>& currentCode) {
     if (!node) return;
 
     // 叶子节点，保存编码
@@ -122,7 +122,7 @@ std::shared_ptr<HuffmanNode> HuffmanTree::getRoot() const {
 // [1字节: 标志位] [如果是叶子: 1字节数据] [如果不是叶子: 递归序列化左右子树]
 // 标志位: 0x01 = 叶子节点, 0x00 = 内部节点
 
-void HuffmanTree::serializeTree(std::shared_ptr<HuffmanNode> node,
+void HuffmanTree::serializeTree(const std::shared_ptr<HuffmanNode>& node,
                                 std::vector<uint8_t>& output) const {
     if (!node) return;
 
@@ -136,7 +136,7 @@ void HuffmanTree::serializeTree(std::shared_ptr<HuffmanNode> node,
     }
 }
 
-std::vector<uint8_t> HuffmanTree::serialize() const {
+auto HuffmanTree::serialize() const -> std::vector<uint8_t> {
     if (!root) {
         throw std::runtime_error("树为空，无法序列化");
     }
@@ -146,8 +146,8 @@ std::vector<uint8_t> HuffmanTree::serialize() const {
     return output;
 }
 
-std::shared_ptr<HuffmanNode> HuffmanTree::deserializeTree(const std::vector<uint8_t>& data,
-    size_t& index) {
+auto HuffmanTree::deserializeTree(const std::vector<uint8_t>& data,
+                                  size_t& index) -> std::shared_ptr<HuffmanNode> {
     if (index >= data.size()) {
         throw std::runtime_error("反序列化数据不完整");
     }
@@ -185,7 +185,7 @@ size_t HuffmanTree::getDepth() const {
     if (!root) return 0;
 
     std::function<size_t(std::shared_ptr<HuffmanNode>)> getDepth =
-        [&getDepth](std::shared_ptr<HuffmanNode> node) ->size_t {
+        [&getDepth](const std::shared_ptr<HuffmanNode>& node) ->size_t {
         if (!node) return 0;
         if (node->isLeaf) return 1;
         return 1 + std::max(getDepth(node->left), getDepth(node->right));

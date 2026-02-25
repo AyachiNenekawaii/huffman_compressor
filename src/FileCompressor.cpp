@@ -1,9 +1,11 @@
 #include "FileCompressor.hpp"
+#include "BitStream.hpp"
 #include <stdexcept>
+#include <fstream>
 
 namespace huffman {
 
-std::vector<uint8_t> FileCompressor::readFile(const std::string& filename) {
+auto FileCompressor::readFile(const std::string& filename) -> std::vector<uint8_t> {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
     if (!file) {
         throw std::runtime_error("open file failed: " + filename);
@@ -53,7 +55,7 @@ void FileCompressor::setHeader(const std::vector<uint8_t>& compressedData) {
     }
 }
 
-std::vector<uint8_t> FileCompressor::compress(const std::vector<uint8_t>& originalData) {
+auto FileCompressor::compress(const std::vector<uint8_t>& originalData) -> std::vector<uint8_t> {
     // 构建哈夫曼树
     huffmanTree.buildFromData(originalData);
 
@@ -92,7 +94,7 @@ std::vector<uint8_t> FileCompressor::compress(const std::vector<uint8_t>& origin
     return compressedData;
 }
 
-std::vector<uint8_t> FileCompressor::decompress(const std::vector<uint8_t>& compressedData) {
+auto FileCompressor::decompress(const std::vector<uint8_t>& compressedData) -> std::vector<uint8_t> {
     // 获取头信息
     setHeader(compressedData);
 

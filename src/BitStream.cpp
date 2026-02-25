@@ -1,4 +1,6 @@
 #include "BitStream.hpp"
+#include <stdexcept>
+#include <fstream>
 
 namespace huffman {
 
@@ -56,11 +58,11 @@ void BitOutputStream::clear() {
     bitCount = 0;
 }
 
-std::vector<uint8_t> BitOutputStream::getBuffer() const {
+auto BitOutputStream::getBuffer() const -> std::vector<uint8_t> {
     return buffer;
 }
 
-int BitOutputStream::getBitCount() const {
+auto BitOutputStream::getBitCount() const -> int {
     return buffer.size() * 8 + bitCount;
 }
 
